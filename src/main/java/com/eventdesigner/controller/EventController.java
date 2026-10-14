@@ -21,8 +21,9 @@ import com.eventdesigner.backend.repository.EventRepository;
 @RestController
 @RequestMapping("/api/events")
 @CrossOrigin(origins = {
-        "http://localhost:5173",
-        "http://localhost:5176"
+    "http://localhost:5173",
+    "http://localhost:5176",
+    "https://event-experience-designer-frontend.onrender.com"
 })
 public class EventController {
 
@@ -35,8 +36,7 @@ public class EventController {
     // Get all events
     @GetMapping
     public ResponseEntity<List<Event>> getAllEvents() {
-        List<Event> events = eventRepository.findAll();
-        return ResponseEntity.ok(events);
+        return ResponseEntity.ok(eventRepository.findAll());
     }
 
     // Get event by ID
@@ -46,17 +46,13 @@ public class EventController {
 
         Optional<Event> event = eventRepository.findById(id);
 
-        if (event.isPresent()) {
-            return ResponseEntity.ok(event.get());
-        }
-
-        return ResponseEntity.notFound().build();
+        return event.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     // Create a new event
     @PostMapping
-    public ResponseEntity<?> createEvent(
-            @RequestBody Event event) {
+    public ResponseEntity<?> createEvent(@RequestBody Event event) {
 
         if (event.getTitle() == null
                 || event.getTitle().trim().isEmpty()) {
@@ -64,15 +60,12 @@ public class EventController {
                     .body("Event title is required.");
         }
 
-        // Generate a new database ID
         event.setId(null);
 
-        // Temporary default owner ID
         if (event.getOwnerId() == null) {
             event.setOwnerId(1L);
         }
 
-        // Generate a unique public slug
         if (event.getPublicSlug() == null
                 || event.getPublicSlug().trim().isEmpty()) {
 
@@ -91,7 +84,6 @@ public class EventController {
             );
         }
 
-        // Default publication status
         if (event.getPublished() == null) {
             event.setPublished(false);
         }
@@ -141,7 +133,7 @@ public class EventController {
         return ResponseEntity.ok(savedEvent);
     }
 
-    // Delete an event
+    // Delete an existing event
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEvent(
             @PathVariable("id") Long id) {
